@@ -1,0 +1,99 @@
+import json
+import csv
+
+# Replace 'your_file.json' with the path to your JSON file
+json_file_path = '20230914_080417_issue_sharings.json'
+
+# Read JSON file
+with open(json_file_path, 'r', encoding='utf-8') as json_file:
+    json_data = json.load(json_file)
+
+# Extracting author and DateOfConversation from the JSON data
+data_rows = []
+for source in json_data.get("Sources", []):
+    for sharing in source.get("ChatgptSharing", []):
+        for conversation in sharing.get("Conversations", []):
+            author = source.get("Author", "")
+            date_of_conversation = sharing.get("DateOfConversation", "")
+            data_rows.append((author, date_of_conversation))
+
+# Writing author and DateOfConversation to CSV file
+csv_file_path = "author_and_date.csv"
+with open(csv_file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+    writer = csv.writer(csv_file)
+    writer.writerow(["Author", "DateOfConversation"])  # Write header
+    for row in data_rows:
+        writer.writerow(row)
+
+print(f"Author and DateOfConversation written to {csv_file_path}")
+
+import pandas as pd
+
+# Load the CSV file into a DataFrame
+df = pd.read_csv('author_and_date.csv')
+
+# Remove duplicates based on all columns
+df_no_duplicates = df.drop_duplicates()
+
+# Save the DataFrame without duplicates to a new CSV file
+df_no_duplicates.to_csv('author_and_data_no_duplicates.csv', index=False)
+
+import pandas as pd
+
+# Load the CSV file into a DataFrame
+df = pd.read_csv('author_and_data_no_duplicates.csv')
+
+# Extract the date part using regular expressions
+df['DateOfConversation'] = df['DateOfConversation'].str.extract(r'([a-zA-Z]+\s\d{1,2},\s\d{4})')
+
+# Convert the 'date_column' to a datetime object
+df['DateOfConversation'] = pd.to_datetime(df['DateOfConversation'], format='%B %d, %Y', errors='coerce')
+
+# Drop rows with missing or invalid dates
+df = df.dropna(subset=['DateOfConversation'])
+
+# Save the DataFrame with the cleaned date column to a new CSV file
+df.to_csv('output_file_cleaned.csv', index=False)
+
+import pandas as pd
+
+# Load the CSV file into a DataFrame
+df = pd.read_csv('output_file_cleaned.csv')
+
+# Convert the 'date_column' to a datetime object
+df['DateOfConversation'] = pd.to_datetime(df['DateOfConversation'])
+
+# Add a new column 'day_name' with the name of the day
+df['day_name'] = df['DateOfConversation'].dt.day_name()
+
+# Save the DataFrame with the added column to a new CSV file
+df.to_csv('output_file_with_day_names.csv', index=False)
+
+import pandas as pd
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
+# Load the CSV file into a DataFrame
+df = pd.read_csv('output_file_with_day_names.csv')
+
+# Assuming your CSV file has a column named 'conversations' with text data
+text_data = ' '.join(df['day_name'].dropna())
+
+# Generate a word cloud
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text_data)
+
+# Display the generated word cloud using matplotlib
+plt.figure(figsize=(10, 5))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.show()
+
+day_name_counts = df['day_name'].value_counts()
+
+# Plot the bar graph
+plt.figure(figsize=(10, 6))
+day_name_counts.plot(kind='bar', color='skyblue')
+plt.xlabel('Day of the Week')
+plt.ylabel('Frequency')
+plt.title('Frequency of Day Names in Conversations')
+plt.show()
