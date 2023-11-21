@@ -1,36 +1,38 @@
-import csv
 import json
-
+import pandas as pd
 
 file_path = 'Documents/20230831_060603_pr_sharings.json'
 
 try:
+    # Load JSON data
     with open(file_path, 'r') as file:
         data = json.load(file)
 
-    # Extracting author and prompts from the JSON data
-    data_rows = [(source.get("Author", ""), conv.get("Prompt", ""), conv.get("Answer", ""), listOfCode.get("Content","")) 
-                 for source in data.get("Sources", []) 
-                 for chatgptSharing in source.get("ChatgptSharing", []) 
-                 for conv in chatgptSharing.get("Conversations", [])
-                 for listOfCode in conv.get("ListOfCode", [])
-                 ]
+    # Extract author, prompt, answer, and content from the JSON data
+    data_rows = [
+        (source.get("Author", ""), conv.get("Prompt", ""), conv.get("Answer", ""), listOfCode.get("Content", ""))
+        for source in data.get("Sources", [])
+        for chatgptSharing in source.get("ChatgptSharing", [])
+        for conv in chatgptSharing.get("Conversations", [])
+        for listOfCode in conv.get("ListOfCode", [])
+    ]
 
+    # Display the data
     print(data_rows)
-    csv_file_path = 'Documents/output_csv_path'
-    # Writing data to a CSV file
-    with open(csv_file_path, 'w', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file)
-        # Writing header
-        csv_writer.writerow(['Author', 'Prompt', 'Answer', 'Content'])
-        # Writing data rows
-        csv_writer.writerows(data_rows)
 
-    #print(f"Data written to {output_csv_path}")
+    # Create a DataFrame
+    df = pd.DataFrame(data_rows)
+
+    # Specify the CSV file path
+    csv_file_path = 'Documents/output_csv_path'
+
+    # Write the DataFrame to a CSV file
+    df.to_csv(csv_file_path, index=False)
+
+    print(f"Data written to {csv_file_path}")
 
 except FileNotFoundError:
     print(f"File not found: {file_path}")
 
 except json.JSONDecodeError as e:
     print(f"Error decoding JSON: {e}")
-
