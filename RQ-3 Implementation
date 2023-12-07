@@ -1,47 +1,70 @@
 import json
-import csv
+import pandas as pd
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
-file_path = 'Documents/20230831_060603_pr_sharings.json'
+def load_json_data(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+        return None
 
-try:
-    # Load JSON data
-    with open(file_path, 'r') as file:
-        data = json.load(file)
+def extract_relevant_data(data, keywords):
+    data_rows = []
+    for source in data.get("Sources", []):
+        for chatgptSharing in source.get("ChatgptSharing", []):
+            for conv in chatgptSharing.get("Conversations", []):
+                for listOfCode in conv.get("ListOfCode", []):
+                    if any(keyword.lower() in field.lower() for field in [conv.get("Prompt", ""), conv.get("Answer", "")] for keyword in keywords):
+                        data_rows.append({
+                            "Author": source.get("Author", ""),
+                            "Prompt": conv.get("Prompt", ""),
+                            "Answer": conv.get("Answer", ""),
+                            "Content": listOfCode.get("Content", "")
+                        })
+    return data_rows
 
-    # Extract author, prompt, answer, and content from the JSON data
-    data_rows = [
-        (
-            source.get("Author", ""),
-            conv.get("Prompt", ""),
-            conv.get("Answer", ""),
-            listOfCode.get("Content", "")
-        )
-        for source in data.get("Sources", [])
-        for chatgptSharing in source.get("ChatgptSharing", [])
-        for conv in chatgptSharing.get("Conversations", [])
-        for listOfCode in conv.get("ListOfCode", [])
-    ]
-
-    # Display the data
-    print(data_rows)
-
-    # Specify the CSV file path
-    csv_file_path = 'Documents/output.csv'
-
-    # Writing data to a CSV file
-    with open(csv_file_path, 'w', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file)
-
-        # Writing header
-        csv_writer.writerow(["Author", "Prompt", "Answer", "Content"])
-
-        # Writing data rows
-        csv_writer.writerows(data_rows)
-
+def save_to_csv(data_rows, csv_file_path):
+    df = pd.DataFrame(data_rows)
+    df.to_csv(csv_file_path, index=False)
     print(f"Data written to {csv_file_path}")
+    return df
 
-except FileNotFoundError:
-    print(f"File not found: {file_path}")
+def plot_wordcloud(df, column):
+    text_content = ' '.join(df[column].dropna())
+    wordcloud = WordCloud(width=800, height=600, background_color='white').generate(text_content)
+    plt.figure(figsize=(10, 5))
+    plt.imshow(wordcloud, interpolation='bicubic')
+    plt.axis('off')
+    plt.show()
 
-except json.JSONDecodeError as e:
-    print(f"Error decoding JSON: {e}")
+def plot_bar_chart(df, column, color):
+    counts = df[column].value_counts()
+    plt.figure(figsize=(8, 4))
+    counts.plot(kind='bar', color=color)
+    plt.xlabel(column)
+    plt.ylabel('Counts')
+    plt.title(f'Frequency of {column} in Conversations')
+    plt.xticks(rotation=0)
+    plt.show()
+
+# Main execution
+file_path = '20230831_061759_issue_sharings.json'
+keywords = ['simplify', 'minimize', 'smaller', 'readable', 'refactor', 'simplified', 'reduce']
+csv_file_path = 'finaloutput.csv'
+
+data = load_json_data(file_path)
+if data:
+    data_rows = extract_relevant_data(data, keywords)
+    df = save_to_csv(data_rows, csv_file_path)
+    
+    # Generate and display word cloud
+    plot_wordcloud(df, 'Content')
+
+    # Plot bar chart for frequency of simplified code
+    plot_bar_chart(df, 'Content', 'skyblue')
