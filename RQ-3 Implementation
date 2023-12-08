@@ -1,70 +1,93 @@
 import json
+import csv
 import pandas as pd
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
-def load_json_data(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-        return None
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
-        return None
+file_path = '20230831_061759_issue_sharings.json'
 
-def extract_relevant_data(data, keywords):
+try:
+    # Load JSON data
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+
+    # Function to check if any of the specified keywords are in the text
+    def contains_keywords(text, keywords):
+        return any(keyword.lower() in text.lower() for keyword in keywords)
+
+    # Keywords to search for
+    keywords = ['simplify', 'minimize', 'smaller', 'readable', 'refactor', 'simplified', 'reduce']
+
+    # Extract data containing any of the specified keywords
     data_rows = []
     for source in data.get("Sources", []):
         for chatgptSharing in source.get("ChatgptSharing", []):
             for conv in chatgptSharing.get("Conversations", []):
                 for listOfCode in conv.get("ListOfCode", []):
-                    if any(keyword.lower() in field.lower() for field in [conv.get("Prompt", ""), conv.get("Answer", "")] for keyword in keywords):
-                        data_rows.append({
-                            "Author": source.get("Author", ""),
-                            "Prompt": conv.get("Prompt", ""),
-                            "Answer": conv.get("Answer", ""),
-                            "Content": listOfCode.get("Content", "")
-                        })
-    return data_rows
+                    # Extract relevant fields
+                    author = source.get("Author", "")
+                    prompt = conv.get("Prompt", "")
+                    answer = conv.get("Answer", "")
+                    content = listOfCode.get("Content", "")
 
-def save_to_csv(data_rows, csv_file_path):
-    df = pd.DataFrame(data_rows)
-    df.to_csv(csv_file_path, index=False)
+                    # Check for any of the keywords in any of the fields
+                    if any(contains_keywords(field, keywords) for field in [author, prompt, answer, content]):
+                        data_rows.append((author, prompt, answer, content))
+
+    # Display the data
+   # print(data_rows)
+
+    # Specify the CSV file path
+    csv_file_path = 'output.csv'
+
+    # Writing data to a CSV file
+    with open(csv_file_path, 'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+
+        # Writing header
+        csv_writer.writerow(["Author", "Prompt", "Answer", "Content"])
+
+        # Writing data rows
+        csv_writer.writerows(data_rows)
+
     print(f"Data written to {csv_file_path}")
-    return df
 
-def plot_wordcloud(df, column):
-    text_content = ' '.join(df[column].dropna())
-    wordcloud = WordCloud(width=800, height=600, background_color='white').generate(text_content)
-    plt.figure(figsize=(10, 5))
-    plt.imshow(wordcloud, interpolation='bicubic')
-    plt.axis('off')
-    plt.show()
+except FileNotFoundError:
+    print(f"File not found: {file_path}")
 
-def plot_bar_chart(df, column, color):
-    counts = df[column].value_counts()
-    plt.figure(figsize=(8, 4))
-    counts.plot(kind='bar', color=color)
-    plt.xlabel(column)
-    plt.ylabel('Counts')
-    plt.title(f'Frequency of {column} in Conversations')
-    plt.xticks(rotation=0)
-    plt.show()
+except json.JSONDecodeError as e:
+    print(f"Error decoding JSON: {e}")
 
-# Main execution
-file_path = '20230831_061759_issue_sharings.json'
-keywords = ['simplify', 'minimize', 'smaller', 'readable', 'refactor', 'simplified', 'reduce']
-csv_file_path = 'finaloutput.csv'
 
-data = load_json_data(file_path)
-if data:
-    data_rows = extract_relevant_data(data, keywords)
-    df = save_to_csv(data_rows, csv_file_path)
-    
-    # Generate and display word cloud
-    plot_wordcloud(df, 'Content')
+# Load the CSV file into a DataFrame
+df = pd.read_csv('output.csv')
 
-    # Plot bar chart for frequency of simplified code
-    plot_bar_chart(df, 'Content', 'skyblue')
+# Assuming your CSV file has a column named 'Content' with text data
+text_content = ' '.join(df['Content'].dropna())
+
+# Generate a word cloud
+wordcloud = WordCloud(width=800, height=600, background_color='white').generate(text_content)
+
+
+Simplified_Code_Counts = df['Content'].value_counts()
+
+colors = ['yellow', 'orange', 'pink', 'skyblue', 'grey', 'brown']
+# Count the frequency of each unique prompt
+prompt_counts = df['Prompt'].value_counts()
+print(prompt_counts)
+print(Simplified_Code_Counts)
+
+# Display the generated word cloud using matplotlib
+plt.figure(figsize=(10, 5))
+plt.imshow(wordcloud, interpolation='bicubic')
+plt.axis('off')
+plt.show()
+
+# Plot the bar graph for prompt frequency
+plt.figure(figsize=(8, 4))
+Simplified_Code_Counts.plot(kind='bar', color='skyblue')
+plt.xlabel('Content')
+plt.ylabel('Prompts')
+plt.title('Frequency of Simplified Code in Conversations')
+plt.xticks(rotation=0)  # Rotate x-axis labels for better readability
+plt.show()
