@@ -68,11 +68,8 @@ text_content = ' '.join(df['Content'].dropna())
 # Generate a word cloud
 wordcloud = WordCloud(width=800, height=600, background_color='white').generate(text_content)
 
-
+# Count the frequency of each unique content and prompt
 Simplified_Code_Counts = df['Content'].value_counts()
-
-
-# Count the frequency of each unique prompt
 prompt_counts = df['Prompt'].value_counts()
 print(prompt_counts)
 print(Simplified_Code_Counts)
