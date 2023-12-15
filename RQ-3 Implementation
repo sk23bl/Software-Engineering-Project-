@@ -35,7 +35,7 @@ try:
                         data_rows.append((author, prompt, answer, content))
 
     # Display the data
-   # print(data_rows)
+    print(data_rows)
 
     # Specify the CSV file path
     csv_file_path = 'output.csv'
@@ -71,7 +71,7 @@ wordcloud = WordCloud(width=800, height=600, background_color='white').generate(
 
 Simplified_Code_Counts = df['Content'].value_counts()
 
-colors = ['yellow', 'orange', 'pink', 'skyblue', 'grey', 'brown']
+
 # Count the frequency of each unique prompt
 prompt_counts = df['Prompt'].value_counts()
 print(prompt_counts)
@@ -83,11 +83,3 @@ plt.imshow(wordcloud, interpolation='bicubic')
 plt.axis('off')
 plt.show()
 
-# Plot the bar graph for prompt frequency
-plt.figure(figsize=(8, 4))
-Simplified_Code_Counts.plot(kind='bar', color='skyblue')
-plt.xlabel('Content')
-plt.ylabel('Prompts')
-plt.title('Frequency of Simplified Code in Conversations')
-plt.xticks(rotation=0)  # Rotate x-axis labels for better readability
-plt.show()
