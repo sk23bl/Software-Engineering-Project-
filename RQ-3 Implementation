@@ -16,7 +16,7 @@ try:
         return any(keyword.lower() in text.lower() for keyword in keywords)
 
     # Keywords to search for
-    keywords = ['simplify', 'minimize', 'smaller', 'readable', 'refactor', 'simplified', 'reduce', 'optimize']
+    keywords = ['simplify', 'minimize', 'smaller', 'readable', 'refactor', 'simplified', 'reduce', 'optimize', 'better', 'improve', 'shorten', 'cut down']
 
     # Extract data containing any of the specified keywords
     data_rows = []
